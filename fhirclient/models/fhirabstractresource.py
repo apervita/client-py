@@ -74,7 +74,7 @@ class FHIRAbstractResource(fhirabstractbase.FHIRAbstractBase):
         self._server = server
     
     @classmethod
-    def read(cls, rem_id, server):
+    def read(cls, rem_id, server, strict=True):
         """ Read the resource with the given id from the given server. The
         passed-in server instance must support a `request_json()` method call,
         taking a relative path as first (and only mandatory) argument.
@@ -87,13 +87,13 @@ class FHIRAbstractResource(fhirabstractbase.FHIRAbstractBase):
             raise Exception("Cannot read resource without remote id")
         
         path = '{}/{}'.format(cls.resource_type, rem_id)
-        instance = cls.read_from(path, server)
+        instance = cls.read_from(path, server, strict)
         instance._local_id = rem_id
         
         return instance
     
     @classmethod
-    def read_from(cls, path, server):
+    def read_from(cls, path, server, strict=True):
         """ Requests data from the given REST path on the server and creates
         an instance of the receiving class.
         
@@ -107,7 +107,7 @@ class FHIRAbstractResource(fhirabstractbase.FHIRAbstractBase):
             raise Exception("Cannot read resource without server instance")
         
         ret = server.request_json(path)
-        instance = cls(jsondict=ret)
+        instance = cls(jsondict=ret, strict=strict)
         instance.origin_server = server
         return instance
     

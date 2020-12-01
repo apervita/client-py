@@ -41,11 +41,14 @@ class FHIRServer(object):
     """ Handles talking to a FHIR server.
     """
     
-    def __init__(self, client, base_uri=None, state=None):
+    def __init__(self, client, base_uri=None, state=None, is_backend_service=False, is_jwt=False, jwt_params={}):
         self.client = client
         self.auth = None
         self.base_uri = None
         self.aud = None
+        self.is_backend_service = is_backend_service
+        self.is_jwt = is_jwt
+        self.jwt_params = jwt_params
 
         # Use a single requests Session for all "requests"
         self.session = requests.Session()
@@ -312,4 +315,4 @@ class FHIRServer(object):
         assert state
         self.base_uri = state.get('base_uri') or self.base_uri
         self.auth = FHIRAuth.create(state.get('auth_type'), state=state.get('auth'))
-    
+

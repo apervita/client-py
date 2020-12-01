@@ -1,0 +1,6 @@
+{
+  "app_id": "some_app_id",
+  "api_base": "https://fhir-ehr-code.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d",
+  "app_secret": "some_secret",
+  "is_backend_service": true
+}

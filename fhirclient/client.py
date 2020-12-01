@@ -73,9 +73,13 @@ class FHIRClient(object):
             self.app_secret = settings.get('app_secret')
             self.redirect = settings.get('redirect_uri')
             self.patient_id = settings.get('patient_id')
+            self.is_backend_service = settings.get('is_backend_service')
+            self.is_jwt = settings.get('is_jwt')
+            self.jwt_params = settings.get('jwt_params')
             self.scope = settings.get('scope', self.scope)
             self.launch_token = settings.get('launch_token')
-            self.server = FHIRServer(self, base_uri=settings['api_base'])
+            self.server = FHIRServer(self, base_uri=settings['api_base'], is_backend_service=self.is_backend_service,
+                                     is_jwt=self.is_jwt, jwt_params=self.jwt_params)
         else:
             raise Exception("Must either supply settings or a state upon client initialization")
     
