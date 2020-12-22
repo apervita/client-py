@@ -60,8 +60,9 @@ class MockServer(server.FHIRServer):
     """ Reads local files.
     """
     
-    def __init__(self):
+    def __init__(self, is_backend_service=False):
         super().__init__(None, base_uri='https://fhir.smarthealthit.org')
+        self.is_backend_service = is_backend_service
     
     def request_json(self, path, nosign=False):
         assert path
@@ -69,4 +70,4 @@ class MockServer(server.FHIRServer):
             return json.load(handle)
         
         return None
-    
+

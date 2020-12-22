@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import uuid
+from jwt import encode
+from time import time
 import logging
 try:                                # Python 2.x
     import urlparse
@@ -238,29 +240,59 @@ class FHIROAuth2Auth(FHIRAuth):
             raise Exception(err)
         
         stt = args.get('state')
-        if stt is None or self.auth_state != stt:
-            raise Exception("Invalid state, will not use this code. Have: {0}, want: {1}".format(stt, self.auth_state))
+        if not server.is_backend_service:
+            if stt is None or self.auth_state != stt:
+                raise Exception("Invalid state, will not use this code. Have: {0}, want: {1}".format(stt, self.auth_state))
         
         code = args.get('code')
-        if code is None:
-            raise Exception("Did not receive a code, only have: {0}".format(', '.join(args.keys())))
+        if not server.is_backend_service:
+            if code is None:
+                raise Exception("Did not receive a code, only have: {0}".format(', '.join(args.keys())))
         
         # exchange code for token
-        exchange = self._code_exchange_params(code)
+        exchange = self._code_exchange_params(code, is_backend_service=server.is_backend_service,
+                                              scope='system/Patient.read' if server.is_backend_service else None,
+                                              is_jwt=server.is_jwt,
+                                              jwt_params=server.jwt_params)
         return self._request_access_token(server, exchange)
     
-    def _code_exchange_params(self, code):
+    def _code_exchange_params(self, code, is_backend_service=False, scope=None, is_jwt=False, jwt_params={}):
         """ These parameters are used by to exchange the given code for an
         access token.
         """
         return {
             'client_id': self.app_id,
             'code': code,
-            'grant_type': 'authorization_code',
+            'grant_type': 'client_credentials' if is_backend_service else 'authorization_code',
             'redirect_uri': self._redirect_uri,
             'state': self.auth_state,
+            'scope': scope,
+            'client_assertion_type': 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer' if is_jwt else None,
+            'client_assertion': self._get_jwt(jwt_params) if is_jwt else None
         }
-    
+
+    def _get_jwt(self, jwt_params):
+        utc_timestamp = time() - 30
+        exp = utc_timestamp + 210
+
+        jwt_payload = {
+            'iss': jwt_params['client_id'],
+            'sub': jwt_params['client_id'],
+            'aud': self._token_uri,
+            'jti': str(uuid.uuid1()),
+            'exp': int(round(exp, 0)),
+            'iat': int(round(utc_timestamp, 0)),
+            'nbf': int(round(utc_timestamp, 0))
+        }
+
+        jwt_headers = jwt_params['headers']
+
+        with open(jwt_params['private_key_file']) as pk_file:
+            private_key = pk_file.read()
+
+        # Get JSON Web Token
+        return encode(payload=jwt_payload, key=private_key, algorithm=jwt_headers['alg'], headers=jwt_headers)
+
     def _request_access_token(self, server, params):
         """ Requests an access token from the instance's server via a form POST
         request, remembers the token (and patient id if there is one) or

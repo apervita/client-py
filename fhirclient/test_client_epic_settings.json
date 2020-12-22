@@ -1,0 +1,14 @@
+{
+  "app_id": "some_app_id",
+  "api_base": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4",
+  "is_backend_service": true,
+  "is_jwt": true,
+  "jwt_params": {
+    "client_id": "same_as_app_id",
+    "private_key_file": "/some_path/some_file.pem",
+    "headers": {
+      "alg": "RS384",
+      "typ": "JWT"
+    }
+  }
+}
