@@ -5,3 +5,6 @@ bumpversion>=0.3
 isodate>=0.5
 requests>=2.4
 PyJWT==1.7.1
+jsonpickle==1.4.2
+boto3==1.16.31
+aws-xray-sdk==2.4.3
