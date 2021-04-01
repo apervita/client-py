@@ -49,7 +49,7 @@ class TestClient(unittest.TestCase):
         assert patient.id == 'eq081-VQEgP8drUUqCWzHfw3'
 
     def test_client_no_authorization(self):
-        smart = client.FHIRClient(settings=self.no_authorization_settings)
+        smart = client.FHIRClient(settings=self.vonk_settings)
         search = p.where(struct={'family': 'Chalmers'})
         patients = search.perform_resources(smart.server)
         assert patients
@@ -66,13 +66,6 @@ class TestClient(unittest.TestCase):
             assert False
         except FHIRValidationError as e:
             assert True
-
-    def test_client_vonk(self):
-        smart = client.FHIRClient(settings=self.vonk_settings)
-        search = p.where(struct={'family': 'Chalmers'})
-        patients = search.perform_resources(smart.server)
-        assert patients
-        assert len(patients) > 0
 
 
 if __name__ == '__main__':
