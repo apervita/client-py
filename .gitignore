@@ -9,6 +9,7 @@ session_data
 /env
 /env2
 /.venv
+/venv/
 
 # IDE files
 *.sublime-*
@@ -20,3 +21,4 @@ session_data
 # Apervita
 *.apervita
 *.commit
+/*.zip
