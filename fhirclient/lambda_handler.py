@@ -4,6 +4,9 @@ import jsonpickle
 
 from fhirclient import client
 from models.patient import Patient as p
+from models.procedure import Procedure as px
+from models.condition import Condition as cx
+
 
 FHIR_SERVER_SETTINGS_KEY = 'fhir_server_settings'
 PATIENT_ID_KEY = 'patient_id'
@@ -14,13 +17,19 @@ logger.setLevel(logging.INFO)
 
 
 def addPatientToBundle(patient):
-    return {
+    bundle = {
         "resourceType": "Bundle",
         "type": "searchset",
         "entry": [{
-            "fullUrl": f"urn:uuid:{patient['id']}",
-            "resource": patient}]
+            "fullUrl": f"urn:uuid:{patient['Patient'].id}",
+            "resource": patient['Patient'].as_json()}]
     }
+    for procedure in patient['Procedure']:
+        bundle['entry'].append({'resource': procedure.as_json()})
+    for condition in patient['Condition']:
+        bundle['entry'].append({'resource': condition.as_json()})
+
+    return bundle
 
 
 # event dict: {fhir_server_settings, patient_id, query}
@@ -42,11 +51,19 @@ def lambda_handler(event, context):
         smart.handle_callback('some_url')
 
     if patient_id:
-        patients = [p.read(patient_id, smart.server, False).as_json()]
+        patients = [{'Patient': p.read(patient_id, smart.server, False)}]
         if query:
             logger.warning(f'Event query: {query} is ignored because patient_id is set')
     else:
         search = p.where(struct=query)
         patients = search.perform_resources(smart.server)
-        patients = list(map(lambda x: x.as_json(), patients))
-    return list(map(lambda x: addPatientToBundle(x), patients))
+        patients = list(map(lambda x: {'Patient': x}, patients))
+
+    for patient in patients:
+        search = px.where(struct={'subject': patient['Patient'].id, 'status': 'completed'})
+        patient['Procedure'] = search.perform_resources(smart.server)
+        search = cx.where(struct={'subject': patient['Patient'].id})
+        patient['Condition'] = search.perform_resources(smart.server)
+
+    bundles = list(map(lambda x: addPatientToBundle(x), patients))
+    return bundles
