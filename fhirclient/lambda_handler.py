@@ -11,6 +11,7 @@ from models.condition import Condition as cx
 FHIR_SERVER_SETTINGS_KEY = 'fhir_server_settings'
 PATIENT_ID_KEY = 'patient_id'
 QUERY_KEY = 'query'
+RESOURCE_KEY = 'resource'
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -24,10 +25,12 @@ def addPatientToBundle(patient):
             "fullUrl": f"urn:uuid:{patient['Patient'].id}",
             "resource": patient['Patient'].as_json()}]
     }
-    for procedure in patient['Procedure']:
-        bundle['entry'].append({'resource': procedure.as_json()})
-    for condition in patient['Condition']:
-        bundle['entry'].append({'resource': condition.as_json()})
+    if 'Procedure' in patient:
+        for procedure in patient['Procedure']:
+            bundle['entry'].append({'resource': procedure.as_json()})
+    if 'Condition' in patient:
+        for condition in patient['Condition']:
+            bundle['entry'].append({'resource': condition.as_json()})
 
     return bundle
 
@@ -44,6 +47,7 @@ def lambda_handler(event, context):
     fhir_server_settings = event[FHIR_SERVER_SETTINGS_KEY] if FHIR_SERVER_SETTINGS_KEY in event else None
     patient_id = event[PATIENT_ID_KEY] if PATIENT_ID_KEY in event else None
     query = event[QUERY_KEY] if QUERY_KEY in event else None
+    resource = event[RESOURCE_KEY] if RESOURCE_KEY in event else []
     smart = client.FHIRClient(settings=fhir_server_settings)
     if fhir_server_settings.get('app_secret') or \
             fhir_server_settings.get('jwt_params') and fhir_server_settings.get('jwt_params').get('private_key_file'):
@@ -59,11 +63,14 @@ def lambda_handler(event, context):
         patients = search.perform_resources(smart.server)
         patients = list(map(lambda x: {'Patient': x}, patients))
 
-    for patient in patients:
-        search = px.where(struct={'subject': patient['Patient'].id, 'status': 'completed'})
-        patient['Procedure'] = search.perform_resources(smart.server)
-        search = cx.where(struct={'subject': patient['Patient'].id})
-        patient['Condition'] = search.perform_resources(smart.server)
+    if len(resource) > 1:
+        for patient in patients:
+            if 'procedure' in list(map(lambda x: x.lower(), resource)):
+                search = px.where(struct={'patient': patient['Patient'].id})
+                patient['Procedure'] = search.perform_resources(smart.server)
+            if 'condition' in list(map(lambda x: x.lower(), resource)):
+                search = cx.where(struct={'patient': patient['Patient'].id})
+                patient['Condition'] = search.perform_resources(smart.server)
 
     bundles = list(map(lambda x: addPatientToBundle(x), patients))
     return bundles

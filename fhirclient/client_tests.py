@@ -3,6 +3,7 @@ import unittest
 import client
 import json
 from models.patient import Patient as p
+from models.procedure import Procedure as px
 from models.fhirabstractbase import FHIRValidationError
 
 
@@ -30,6 +31,11 @@ class TestClient(unittest.TestCase):
             'api_base': 'https://vonk.fire.ly/R4'
         }
 
+        cls.apervita_settings = {
+            'app_id': 'myApp',
+            'api_base': 'http://54.89.162.246:8080/cqf-ruler-r4/fhir/'
+        }
+
     #  This test will fail if test_client_cerner_settings.json is not configured correctly.
     def test_client_cerner(self):
         smart = client.FHIRClient(settings=self.cerner_settings)
@@ -54,6 +60,18 @@ class TestClient(unittest.TestCase):
         patients = search.perform_resources(smart.server)
         assert patients
         assert len(patients) > 0
+
+    def test_client_procedure(self):
+        smart = client.FHIRClient(settings=self.cerner_settings)
+        smart.prepare()
+        smart.handle_callback('some_url')
+        search = px.where(struct={'patient': '12742400'})
+        # Cerner does not support _include
+        # search.include('subject')
+        resources = search.perform_resources(smart.server)
+        assert resources
+        assert len(resources) > 0
+        assert resources[0].isinstance(px)
 
     # HAPI FHIR does not strictly adhere to FHIR spec
     # Specific issues:

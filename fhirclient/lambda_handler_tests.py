@@ -35,16 +35,31 @@ class TestLambdaHandler(unittest.TestCase):
 
     def test_lambda_handler_patient_id(self):
         event = {lambda_handler.FHIR_SERVER_SETTINGS_KEY: self.epic_settings,
-                 lambda_handler.PATIENT_ID_KEY: 'eq081-VQEgP8drUUqCWzHfw3'}
+                 lambda_handler.PATIENT_ID_KEY: 'eq081-VQEgP8drUUqCWzHfw3',
+                 lambda_handler.RESOURCE_KEY: ['Patient']}
         response = lambda_handler.lambda_handler(event, {})
         assert len(response) == 1
         assert len(response[0]['entry']) >= 1
         assert isinstance(response[0]['entry'], list)
         assert isinstance(response[0]['entry'][0], dict)
 
+    def test_lambda_handler_patient_id_cerner(self):
+        event = {lambda_handler.FHIR_SERVER_SETTINGS_KEY: self.cerner_settings,
+                 lambda_handler.PATIENT_ID_KEY: '12742400',
+                 lambda_handler.RESOURCE_KEY: ['Patient', 'Procedure', 'Condition']}
+        response = lambda_handler.lambda_handler(event, {})
+        import json
+        print(json.dumps(response))
+        assert len(response) == 1
+        assert len(response[0]['entry']) >= 1
+        assert isinstance(response[0]['entry'], list)
+        assert isinstance(response[0]['entry'][0], dict)
+
+
     def test_lambda_handler_query(self):
         event = {lambda_handler.FHIR_SERVER_SETTINGS_KEY: self.vonk_settings,
-                 lambda_handler.QUERY_KEY: {'family': 'Chalmers'}}
+                 lambda_handler.QUERY_KEY: {'family': 'Chalmers'},
+                 lambda_handler.RESOURCE_KEY: ['Patient', 'Procedure']}
         response = lambda_handler.lambda_handler(event, {})
         assert len(response) == 10
         assert len(response[0]['entry']) >= 1
@@ -53,7 +68,8 @@ class TestLambdaHandler(unittest.TestCase):
 
     def test_lambda_handler_patient_id_apervita(self):
         event = {lambda_handler.FHIR_SERVER_SETTINGS_KEY: self.apervita_settings,
-                 lambda_handler.PATIENT_ID_KEY: 'mom-with-anaemia'}
+                 lambda_handler.PATIENT_ID_KEY: 'mom-with-anaemia',
+                 lambda_handler.RESOURCE_KEY: ['Patient', 'Procedure']}
         response = lambda_handler.lambda_handler(event, {})
         assert len(response) == 1
         assert len(response[0]['entry']) >= 1

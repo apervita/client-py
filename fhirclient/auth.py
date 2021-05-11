@@ -251,7 +251,7 @@ class FHIROAuth2Auth(FHIRAuth):
         
         # exchange code for token
         exchange = self._code_exchange_params(code, is_backend_service=server.is_backend_service,
-                                              scope='system/Patient.read' if server.is_backend_service else None,
+                                              scope='system/Patient.read  system/Procedure.read system/Condition.read system/Observation.read' if server.is_backend_service else None,
                                               is_jwt=server.is_jwt,
                                               jwt_params=server.jwt_params)
         return self._request_access_token(server, exchange)
